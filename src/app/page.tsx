@@ -191,6 +191,10 @@ export default function Home() {
                   <span className="text-sm font-medium text-gray-700">
                     Welcome, {userInfo.fullName || userInfo.username}!
                   </span>
+                  <button className="ml-2 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
+                  onClick={() => { setLoginError(null); router.push('/chat-bot'); }}>
+                    Bắt đầu chat
+                  </button>
                   <button
                     onClick={handleLogout}
                     className="ml-2 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"

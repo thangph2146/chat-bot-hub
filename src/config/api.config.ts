@@ -1,12 +1,15 @@
 export const API_ENDPOINTS = {
-  AUTH_LOGIN: '/backend/Users/login',
-  AUTH_REGISTER: '/backend/Users/register',
-  AUTH_GOOGLE_LOGIN: '/backend/Users/google-login',
+  AUTH_LOGIN: '/Users/login',
+  AUTH_REGISTER: '/Users/register',
+  AUTH_GOOGLE_LOGIN: '/Users/google-login',
   AUTH_GOOGLE_VERIFY: '/auth/google/verify',
-  CHAT_MESSAGES: '/backend/ChatMessages',
-  SESSIONS: '/backend/ChatSessions',
-  SESSIONS_BY_USER: (userId: string) => `/backend/ChatSessions/user/${userId}`,
-  // SAVE_MESSAGE_ENDPOINT is the same as CHAT_MESSAGES
+  CHAT_MESSAGES: '/ChatMessages',
+  GET_CHAT_MESSAGES_BY_ID: (id: string) => `/ChatMessages/${id}`, // This might be deprecated or used for other purposes now
+  DELETE_CHAT_MESSAGE: (id: number) => `/ChatMessages/${id}`, // New endpoint for deleting messages
+  GET_RECENT_CHAT_MESSAGES_BY_SESSION_ID: (sessionId: string, count: number = 5) => `/ChatMessages/session/${sessionId}/recent?count=${count}`,
+  SESSIONS: '/ChatSessions',
+  SESSIONS_BY_USER: (userId: string) => `/ChatSessions/user/${userId}`,
+  DELETE_CHAT_SESSION: (id: string) => `/ChatSessions/${id}`, // Add endpoint for deleting a chat session
 };
 
 // The API_BASE_URL for your backend is configured in .env and handled server-side.
