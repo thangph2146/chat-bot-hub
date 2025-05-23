@@ -1,8 +1,9 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import { AlertCircle, WifiOff, RefreshCw } from 'lucide-react';
+import { WifiOff, AlertCircle, RefreshCw } from 'lucide-react';
 import { useLogger } from '@/hooks/useLogger';
+import { Button } from "./button"; // Import the Button component
 
 interface NetworkStatusProps {
   error: any;
@@ -74,14 +75,16 @@ export function NetworkStatus({ error, refetch, isRefetching }: NetworkStatusPro
             </p>
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <button
+            <Button
               type="button"
               onClick={() => refetch()}
               disabled={isRefetching || isSessionDeleted}
-              className={`inline-flex items-center rounded-md px-3 py-1.5 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
+              variant={isSessionDeleted ? "secondary" : "default"} // Use variants
+              size="sm" // Use sm size for text-xs
+              className={`px-3 py-1.5 text-xs focus:ring-2 focus:ring-red-500 focus:ring-offset-2 ${
                 isSessionDeleted 
-                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed' 
-                  : 'bg-red-100 text-red-800 hover:bg-red-200'
+                  ? 'bg-gray-200 text-gray-500 cursor-not-allowed hover:bg-gray-200' // Keep specific disabled style
+                  : 'bg-red-100 text-red-800 hover:bg-red-200' // Keep specific error style
               } disabled:opacity-50`}
             >
               {isRefetching ? (
@@ -95,7 +98,7 @@ export function NetworkStatus({ error, refetch, isRefetching }: NetworkStatusPro
                   Thử lại
                 </>
               )}
-            </button>
+            </Button>
             <span className="text-xs text-red-600">
               {isOnline ? 'Trực tuyến, nhưng không thể kết nối tới máy chủ' : 'Ngoại tuyến'}
             </span>

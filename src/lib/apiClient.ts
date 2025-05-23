@@ -9,6 +9,7 @@ import {
   // QueryClient, // Keep this commented or remove if not creating instance here
 } from '@tanstack/react-query';
 import logger from './logger'; // Import the logger
+import { ChatSession } from './types/chat'; // Corrected import path
 
 const apiClientLogger = (componentName: string) => ({
   debug: (...args: any[]) => logger.debug(`apiClient.${componentName}`, ...args),
@@ -421,19 +422,32 @@ export const useChatSessions = (): UseQueryResult<any[], AxiosErrorType<unknown,
   });
 };
 
+// Define the payload for creating a chat session
+interface CreateChatSessionPayload {
+  userId: number; // Assuming userId is always required
+  title?: string; // Title is optional
+}
+
 // Create a new chat session
-export const useCreateChatSession = (): UseMutationResult<any, AxiosErrorType, any | undefined, unknown> => {
+export const useCreateChatSession = (): UseMutationResult<ChatSession, AxiosErrorType, CreateChatSessionPayload, unknown> => {
   const qc = useQueryClient();
   const log = apiClientLogger('useCreateChatSession');
-  return useMutation<any, AxiosErrorType, any | undefined, unknown>({
-    mutationFn: (sessionData?: any) => {
+  return useMutation<ChatSession, AxiosErrorType, CreateChatSessionPayload, unknown>({
+    mutationFn: (sessionData: CreateChatSessionPayload) => {
       log.info('Creating new chat session with data:', sessionData);
-      return mutateData('post', API_ENDPOINTS.SESSIONS, sessionData);
+      // Ensure mutateData is correctly typed for request (CreateChatSessionPayload) and response (ChatSession)
+      return mutateData<ChatSession, CreateChatSessionPayload>('post', API_ENDPOINTS.SESSIONS, sessionData);
     },
-    onSuccess: (data) => {
+    onSuccess: (data: ChatSession) => { // Response data is now typed as ChatSession
       log.info('Chat session created successfully:', data);
       qc.invalidateQueries({ queryKey: ['chatSessions'] });
-      qc.invalidateQueries({ queryKey: ['chatSessionsByUser'] });
+      // More precise invalidation for chatSessionsByUser using the userId from the response
+      if (data && data.userId) {
+        qc.invalidateQueries({ queryKey: ['chatSessionsByUser', data.userId.toString()] });
+      } else {
+        // Fallback if userId is not in the response, though it should be
+        qc.invalidateQueries({ queryKey: ['chatSessionsByUser'] });
+      }
     },
     onError: (error: AxiosErrorType) => {
       log.error('Error creating chat session:', error.message, error.response?.data);

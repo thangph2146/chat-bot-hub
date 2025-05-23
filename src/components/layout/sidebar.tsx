@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "../ui/button";
 
 interface ChatSession {
   id: string;
@@ -25,6 +26,7 @@ interface SidebarProps {
   setShowSidebar: (show: boolean) => void;
   handleSessionChange: (sessionId: string) => void;
   handleDeleteSessionClick: (sessionId: string) => void;
+  handleNewChat: () => void; // Added prop for new chat
 }
 
 function Sidebar({
@@ -34,7 +36,8 @@ function Sidebar({
   showSidebar,
   setShowSidebar,
   handleSessionChange,
-  handleDeleteSessionClick
+  handleDeleteSessionClick,
+  handleNewChat // Destructure new prop
 }: SidebarProps) {
   return (
     <>
@@ -58,18 +61,34 @@ function Sidebar({
           </h2>
           
           {/* Close button for mobile */}
-          <button 
-            onClick={() => setShowSidebar(false)} 
-            className="md:hidden p-1.5 rounded-md hover:bg-primary-100 transition-colors"
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowSidebar(false)}
+            className="md:hidden text-primary-800 hover:bg-primary-100"
             aria-label="Close sidebar"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-primary-800" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
+          </Button>
+        </div>
+        
+        {/* New Chat Button */}
+        <div className="p-2 md:p-3">
+          <button
+            onClick={handleNewChat}
+            className="w-full flex items-center justify-center p-2.5 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors duration-200 shadow hover:shadow-md active:bg-primary-800 active:shadow-inner"
+            aria-label="Start a new chat session"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Cuộc trò chuyện mới
           </button>
         </div>
         
-        <div className="overflow-y-auto px-2 py-2 h-[calc(100%-4rem)] custom-scrollbar">
+        <div className="overflow-y-auto px-2 py-2 h-[calc(100%-4rem-3.5rem)] custom-scrollbar"> {/* Adjusted height for new button */}
           {/* Add pull-to-refresh indicator for mobile */}
           <div className="md:hidden w-full flex justify-center py-2 text-primary-400 text-xs">
             <span>↓ Kéo xuống để làm mới</span>

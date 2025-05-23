@@ -10,7 +10,8 @@ import {
   useChatSessionsByUser, 
   useGetRecentChatMessagesBySessionId,
   useDeleteChatMessage,
-  useDeleteChatSession
+  useDeleteChatSession,
+  useCreateChatSession // Added import for useCreateChatSession
 } from '@/lib/apiClient';
 
 // Import the components
@@ -72,6 +73,7 @@ export default function ChatBotPage() {
   } = useGetRecentChatMessagesBySessionId(currentSessionId, 10); // Fetch 10 recent messages
   const deleteMessage = useDeleteChatMessage(); // Initialize the delete message hook
   const deleteSession = useDeleteChatSession(userInfo?.userId?.toString());
+  const createSession = useCreateChatSession(); // Initialize the create session hook
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
@@ -118,6 +120,27 @@ export default function ChatBotPage() {
     logger.info(COMPONENT_NAME, `Changing to session ID: ${sessionId}`);
     setCurrentSessionId(sessionId);
     refetchRecentMessages();
+  };
+
+  const handleNewChat = async () => {
+    if (!userInfo) {
+      logger.warn(COMPONENT_NAME, "Cannot create new chat, user info not available.");
+      return;
+    }
+    logger.info(COMPONENT_NAME, "Attempting to create a new chat session.");
+    try {
+      const newSession = await createSession.mutateAsync({
+        userId: userInfo.userId,
+        // Optionally, you can provide a default title or let the backend handle it
+        // title: "New Chat"
+      });
+      logger.info(COMPONENT_NAME, "New chat session created successfully:", newSession);
+      setCurrentSessionId(newSession.id); // Switch to the new session
+      // userSessions query will be invalidated by the hook, so no need to manually refetch here
+    } catch (error) {
+      logger.error(COMPONENT_NAME, "Error creating new chat session:", error);
+      // Handle error (e.g., show a notification to the user)
+    }
   };
 
   const handleSendMessage = async () => {
@@ -342,6 +365,7 @@ export default function ChatBotPage() {
           setShowSidebar={setShowSidebar}
           handleSessionChange={handleSessionChange}
           handleDeleteSessionClick={handleDeleteSessionClick}
+          handleNewChat={handleNewChat} // Pass the new handler to Sidebar
         />
         
         <ChatArea 
@@ -361,6 +385,7 @@ export default function ChatBotPage() {
           setNewMessage={setNewMessage}
           handleSendMessage={handleSendMessage}
           handleKeyPress={handleKeyPress}
+          handleNewChat={handleNewChat} // Add the missing prop
         />
       </MainLayout>
 

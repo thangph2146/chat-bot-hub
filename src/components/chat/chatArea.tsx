@@ -4,6 +4,7 @@ import React, { useEffect } from 'react';
 import Message from './message';
 import ChatInput from './chatInput';
 import { NetworkStatus } from '@/components/ui/networkStatus';
+import { Button } from "../ui/button";
 import { useLogger } from '@/hooks/useLogger';
 
 interface ChatMessage {
@@ -42,6 +43,7 @@ interface ChatAreaProps {
   setNewMessage: (message: string) => void;
   handleSendMessage: () => void;
   handleKeyPress: (e: React.KeyboardEvent) => void;
+  handleNewChat: () => void; // Added prop for new chat
 }
 
 function ChatArea({
@@ -60,7 +62,8 @@ function ChatArea({
   newMessage,
   setNewMessage,
   handleSendMessage,
-  handleKeyPress
+  handleKeyPress,
+  handleNewChat // Destructure new prop
 }: ChatAreaProps) {
   const logger = useLogger();
 
@@ -183,14 +186,16 @@ function ChatArea({
 
       {/* Add floating new chat button for mobile */}
       <div className="md:hidden fixed bottom-20 right-4 z-10">
-        <button
-          className="w-12 h-12 rounded-full bg-gradient-to-r from-primary-600 to-primary-800 text-white shadow-lg flex items-center justify-center"
+        <Button
+          onClick={handleNewChat}
+          size="icon"
+          className="w-12 h-12 rounded-full bg-gradient-to-r from-primary-600 to-primary-800 text-white shadow-lg flex items-center justify-center hover:from-primary-700 hover:to-primary-900"
           aria-label="Create new chat"
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
           </svg>
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 "use client";
 
 import React from 'react';
+import { Button } from '../ui/button'; // Import Button component
 
 interface ChatInputProps {
   newMessage: string;
@@ -21,11 +22,11 @@ function ChatInput({
     <div className="p-3 sm:p-4 bg-secondary-100/80 backdrop-blur-sm border-t border-primary-200 rounded-b-none md:rounded-b-lg sticky bottom-0">
       <div className="flex items-end gap-2 sm:gap-3">
         {/* Add attachment button for mobile */}
-        <button className="p-2 text-primary-500 hover:text-primary-700 hidden sm:block">
+        <Button variant="ghost" size="icon" className="text-primary-500 hover:text-primary-700 hidden sm:block p-2">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
           </svg>
-        </button>
+        </Button>
 
         <div className="flex-grow relative">
           <textarea
@@ -42,11 +43,12 @@ function ChatInput({
           </div>
         </div>
         
-        <button
+        <Button
           onClick={handleSendMessage}
           disabled={isSending || !newMessage.trim()}
           aria-label="Send message"
-          className={`px-3 py-3 sm:px-6 sm:py-4 font-medium rounded-full transition-all duration-200 flex items-center space-x-1 sm:space-x-2
+          size="lg" // Adjusted size for better fit with icon and text
+          className={`font-medium rounded-full transition-all duration-200 flex items-center space-x-1 sm:space-x-2 px-3 py-3 sm:px-6 sm:py-4
             ${isSending || !newMessage.trim() 
               ? 'bg-secondary-500 cursor-not-allowed text-secondary-300' 
               : 'bg-gradient-to-r from-primary-700 to-primary-900 hover:from-primary-800 hover:to-primary-900 text-white transform hover:scale-105 hover:shadow-lg active:scale-95'} 
@@ -68,7 +70,7 @@ function ChatInput({
               </svg>
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

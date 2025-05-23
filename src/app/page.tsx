@@ -9,6 +9,7 @@ import logger from "@/lib/logger"; // Import the logger
 import { useDispatch, useSelector } from 'react-redux'; // Added useSelector
 import { setAuthLoading, setAuthSuccess, setAuthError, clearAuth } from '@/lib/store/authSlice'; // Import Redux actions, added clearAuth
 import { AppDispatch, RootState } from "@/lib/store/store"; // Import AppDispatch type, added RootState
+import { Button } from "@/components/ui/button";
 
 const COMPONENT_NAME = "HomePage";
 
@@ -191,16 +192,22 @@ export default function Home() {
                   <span className="text-sm font-medium text-gray-700">
                     Welcome, {userInfo.fullName || userInfo.username}!
                   </span>
-                  <button className="ml-2 px-3 py-1.5 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-                  onClick={() => { setLoginError(null); router.push('/chat-bot'); }}>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    className="ml-2 py-1.5 text-white bg-blue-600 hover:bg-blue-700"
+                    onClick={() => { setLoginError(null); router.push('/chat-bot'); }}
+                  >
                     Bắt đầu chat
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    className="ml-2 py-1.5 text-white bg-red-600 hover:bg-red-700"
                     onClick={handleLogout}
-                    className="ml-2 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
                   >
                     Logout
-                  </button>
+                  </Button>
                 </div>
               </div>
             ) : googleClientId ? (
@@ -215,12 +222,13 @@ export default function Home() {
                 width="300px" 
               />
             ) : (
-              <button
+              <Button
                 disabled
-                className="flex items-center justify-center gap-3 bg-gray-400 text-white border border-gray-500 shadow-md px-6 py-3 rounded-lg h-[40px] w-[300px]" // Match GoogleLogin size
+                variant="secondary" // Base variant
+                className="w-[300px] h-[40px] px-6 py-3 bg-gray-400 text-white border border-gray-500 shadow-md rounded-lg hover:bg-gray-400 focus-visible:ring-offset-0 focus-visible:ring-0"
               >
                 Đăng nhập với Google (Chưa cấu hình)
-              </button>
+              </Button>
             )}
             {/* Show pending state for verifyGoogleLoginMutation specifically if it's different from general authIsLoading */}
             {verifyGoogleLoginMutation.isPending && !authIsLoading && (
@@ -262,16 +270,17 @@ export default function Home() {
 
               </div>
 
-              <button
+              <Button
                 onClick={() => { setLoginError(null); router.push('/about'); }}
-                className="flex items-center justify-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md relative overflow-hidden group"
+                variant="outline"
+                className="gap-2 bg-white text-gray-800 border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md relative overflow-hidden group focus-visible:ring-offset-0 focus-visible:ring-0"
               >
                 <span className="absolute inset-0 w-0 h-full bg-primary-50 transition-all duration-300 group-hover:w-full"></span>
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 relative z-10 transform group-hover:rotate-12 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
                 <span className="relative z-10">Tìm hiểu thêm</span>
-              </button>
+              </Button>
             </div>
 
             <div className="mt-6 p-4 bg-accent-50 border-l-4 border-accent-600 rounded-lg shadow-sm transform transition-all duration-300 hover:shadow-md hover:-translate-y-0.5">
@@ -310,18 +319,18 @@ export default function Home() {
                 </div>
 
                 <div className="space-y-3">
-                  <button className="w-full text-left p-4 bg-secondary-50 hover:bg-secondary-100 border border-secondary-100 rounded-lg text-gray-800 transition-all duration-300 hover:shadow-md flex items-center transform hover:-translate-y-0.5 group">
-                    <span className="mr-3 text-primary-600 transition-transform duration-300 group-hover:translate-x-1">→</span>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left p-4 bg-secondary-50 hover:bg-secondary-100 border-secondary-100 rounded-lg text-gray-800 transition-all duration-300 hover:shadow-md flex items-center transform hover:-translate-y-0.5 group focus-visible:ring-offset-0 focus-visible:ring-0"
+                  >
                     Thông tin về chương trình học?
-                  </button>
-                  <button className="w-full text-left p-4 bg-secondary-50 hover:bg-secondary-100 border border-secondary-100 rounded-lg text-gray-800 transition-all duration-300 hover:shadow-md flex items-center transform hover:-translate-y-0.5 group">
-                    <span className="mr-3 text-primary-600 transition-transform duration-300 group-hover:translate-x-1">→</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left p-4 bg-secondary-50 hover:bg-secondary-100 border-secondary-100 rounded-lg text-gray-800 transition-all duration-300 hover:shadow-md flex items-center transform hover:-translate-y-0.5 group focus-visible:ring-offset-0 focus-visible:ring-0"
+                  >
                     Lịch thi học kỳ 2?
-                  </button>
-                  <button className="w-full text-left p-4 bg-secondary-50 hover:bg-secondary-100 border border-secondary-100 rounded-lg text-gray-800 transition-all duration-300 hover:shadow-md flex items-center transform hover:-translate-y-0.5 group">
-                    <span className="mr-3 text-primary-600 transition-transform duration-300 group-hover:translate-x-1">→</span>
-                    Thủ tục đăng ký học phần?
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>

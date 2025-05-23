@@ -7,6 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button"; // Import Button component
 
 interface ChatMessage {
   id: number;
@@ -74,7 +75,9 @@ function Message({ message: msg, isDeletingMessage, handleDeleteMessageClick }: 
           >
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <button 
+                <Button 
+                  variant="ghost"
+                  size="icon"
                   className="p-1.5 rounded-full transition-colors duration-200 bg-white shadow-md text-gray-600 hover:text-primary-700 hover:bg-gray-50"
                   aria-label="Message options"
                   title="Message options"
@@ -82,7 +85,7 @@ function Message({ message: msg, isDeletingMessage, handleDeleteMessageClick }: 
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                   </svg>
-                </button>
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent 
                 align={msg.isUser ? "start" : "end"} 
