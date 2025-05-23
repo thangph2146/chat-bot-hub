@@ -2,20 +2,146 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Custom animation keyframes */
+@keyframes draw-line {
+  from {
+    stroke-dashoffset: 100;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes blob {
+  0% {
+    transform: scale(1);
+  }
+  33% {
+    transform: scale(1.1);
+  }
+  66% {
+    transform: scale(0.9);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes typing {
+  from { width: 0 }
+  to { width: 100% }
+}
+
+@keyframes bounce-gentle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+@layer base {
+  html {
+    @apply antialiased;
+  }
+
+  /* Define the custom font-heading properties directly in the base layer for h tags */
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Example font stack */
+    @apply font-semibold; /* Example: make headings semibold */
+  }
+
+  body {
+    font-family: Arial, Helvetica, sans-serif; /* Default font-family */
+    @apply text-secondary-900; /* Default text color from Tailwind config */
+    /* CSS variables for background and foreground, can be overridden by dark mode */
+    color: var(--foreground);
+    background: var(--background);
+  }
+}
+
+@layer components {
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary-200 text-secondary-800 hover:bg-secondary-300 focus:ring-secondary-400;
+  }
+
+  .input {
+    @apply appearance-none block w-full px-3 py-2 border border-secondary-300 rounded-md shadow-sm
+           placeholder-secondary-400 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm;
+  }
+
+  .card {
+    @apply bg-white rounded-lg shadow-soft p-6;
+  }
+  
+  /* Custom animation classes */
+  .animate-draw-line {
+    animation: draw-line 1.5s ease-in-out forwards;
+  }
+  
+  .animate-blob {
+    animation: blob 7s infinite alternate;
+  }
+  
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
+  }
+  
+  .animate-bounce-gentle {
+    animation: bounce-gentle 2s ease-in-out infinite;
+  }
+  
+  .typing-effect {
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .typing-effect::after {
+    content: '|';
+    position: absolute;
+    right: 0;
+    animation: blink 1s step-end infinite;
+  }
+  
+  @keyframes blink {
+    from, to { opacity: 1; }
+    50% { opacity: 0; }
+  }
+}
+
+/* Define .font-heading as a utility class if it needs to be applied outside of h tags */
+@layer utilities {
+  .font-heading {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Example font stack */
+    @apply font-semibold;
+  }
+  
+  .animation-delay-2000 {
+    animation-delay: 2s;
+  }
+  
+  .animation-delay-4000 {
+    animation-delay: 4s;
+  }
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #F5F5F5; /* Light Grayish Beige - Matches secondary.DEFAULT */
+  --foreground: #171717; /* Default dark text */
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #1a1a1a; /* Darker background for dark mode */
+    --foreground: #e0e0e0; /* Lighter text for dark mode */
   }
-}
-
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
 }
