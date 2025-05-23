@@ -1,11 +1,11 @@
 export const API_ENDPOINTS = {
-  AUTH_LOGIN: '/api/backend/Users/login',
-  AUTH_REGISTER: '/api/backend/Users/register',
-  AUTH_GOOGLE_LOGIN: '/api/backend/Users/google-login',
-  AUTH_GOOGLE_VERIFY: '/api/backend/auth/google/verify',
-  CHAT_MESSAGES: '/api/backend/ChatMessages',
-  SESSIONS: '/api/backend/ChatSessions',
-  SESSIONS_BY_USER: (userId: string) => `/api/backend/ChatSessions/user/${userId}`,
+  AUTH_LOGIN: '/backend/Users/login',
+  AUTH_REGISTER: '/backend/Users/register',
+  AUTH_GOOGLE_LOGIN: '/backend/Users/google-login',
+  AUTH_GOOGLE_VERIFY: '/auth/google/verify',
+  CHAT_MESSAGES: '/backend/ChatMessages',
+  SESSIONS: '/backend/ChatSessions',
+  SESSIONS_BY_USER: (userId: string) => `/backend/ChatSessions/user/${userId}`,
   // SAVE_MESSAGE_ENDPOINT is the same as CHAT_MESSAGES
 };
 
@@ -47,23 +47,3 @@ export interface DifyChatPayload {
   conversation_id?: string;       // (Optional) to continue an existing conversation
 }
 
-/*
-// Example of how DifyChatPayload might be defined and used when preparing a request
-// (typically on the client-side before sending to your backend, or directly on the server-side):
-
-const exampleUserQuery = "Tell me about Large Language Models.";
-const exampleUserId = "user_session_xyz789";
-const currentConversationId = "conv_abc123"; // Optional
-
-const chatPayloadForDify: DifyChatPayload = {
-  inputs: { // Any specific inputs your Dify app is configured to use
-    // "variable_name_in_dify": "value"
-  },
-  query: exampleUserQuery,
-  user: exampleUserId,
-  response_mode: "streaming", // Or "blocking"
-  conversation_id: currentConversationId, // Include if continuing a conversation
-};
-
-// This payload would then be sent to your backend, which would securely call the Dify API.
-*/

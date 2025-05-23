@@ -4,8 +4,11 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { GoogleOAuthProvider, GoogleLogin, CredentialResponse } from '@react-oauth/google';
-import { useVerifyGoogleLogin } from "@/lib/apiClient"; // Assuming apiClient is in src/lib
+import { useVerifyGoogleLogin, GoogleVerifyResponseData } from "@/lib/apiClient"; // Import type from apiClient
 import logger from "@/lib/logger"; // Import the logger
+import { useDispatch, useSelector } from 'react-redux'; // Added useSelector
+import { setAuthLoading, setAuthSuccess, setAuthError, clearAuth } from '@/lib/store/authSlice'; // Import Redux actions, added clearAuth
+import { AppDispatch, RootState } from "@/lib/store/store"; // Import AppDispatch type, added RootState
 
 const COMPONENT_NAME = "HomePage";
 
@@ -14,10 +17,14 @@ export default function Home() {
   const [isVisible, setIsVisible] = useState(false);
   const [isFeaturesVisible, setIsFeaturesVisible] = useState(false);
   const featuresRef = useRef<HTMLDivElement>(null);
-  const [loginError, setLoginError] = useState<string | null>(null); // State for login error messages
+  const [loginError, setLoginError] = useState<string | null>(null); // UI error message
 
   const verifyGoogleLoginMutation = useVerifyGoogleLogin();
+  const dispatch = useDispatch<AppDispatch>();
   
+  // Get auth state from Redux
+  const { isAuthenticated, userInfo, isLoading: authIsLoading } = useSelector((state: RootState) => state.auth);
+
   useEffect(() => {
     logger.info(COMPONENT_NAME, "Component mounted.");
     return () => {
@@ -64,56 +71,88 @@ export default function Home() {
 
   const handleGoogleLoginSuccess = (credentialResponse: CredentialResponse) => {
     logger.info(COMPONENT_NAME, "Google login successful on client-side.");
-    setLoginError(null); // Clear previous errors
+    setLoginError(null); // Clear previous UI errors
+    dispatch(setAuthLoading()); // Dispatch loading state
     if (credentialResponse.credential) {
       logger.debug(COMPONENT_NAME, "Received credential from Google, initiating backend verification.");
-      verifyGoogleLoginMutation.mutate({ token: credentialResponse.credential });
+      verifyGoogleLoginMutation.mutate({ idToken: credentialResponse.credential });
     } else {
       const errorMsg = "Google login failed: No credential received from Google.";
       logger.error(COMPONENT_NAME, errorMsg, credentialResponse);
-      setLoginError(errorMsg);
+      dispatch(setAuthError(errorMsg)); // Dispatch error state
+      setLoginError(errorMsg); // Show error in UI
     }
   };
 
   const handleGoogleLoginError = () => {
     const errorMsg = "Google login failed. Please try again.";
     logger.error(COMPONENT_NAME, "Google login failed on client-side (onError callback triggered).");
-    setLoginError(errorMsg);
-    verifyGoogleLoginMutation.reset(); // Reset mutation state if needed
+    dispatch(setAuthError(errorMsg)); // Dispatch error state
+    setLoginError(errorMsg); // Show error in UI
+    verifyGoogleLoginMutation.reset();
+  };
+
+  const handleLogout = () => {
+    logger.info(COMPONENT_NAME, "User logging out from home page.");
+    localStorage.removeItem('appToken');
+    localStorage.removeItem('userInfo');
+    dispatch(clearAuth());
+    // Optional: router.push('/') or just let the UI update.
+    // If already on home page, router.push('/') might not be necessary unless you want to force a re-render/state clear.
+    setLoginError(null); // Clear any login errors
   };
 
   useEffect(() => {
-    if (verifyGoogleLoginMutation.isPending) {
-      logger.info(COMPONENT_NAME, "Google verification mutation is pending (loading).");
-      setLoginError(null); // Clear errors when a new attempt starts
-    }
+    // No need to manage verifyGoogleLoginMutation.isPending here for Redux,
+    // as setAuthLoading is dispatched before mutation.
+    // We handle success and error states of the mutation.
+
     if (verifyGoogleLoginMutation.isSuccess) {
-      const data = verifyGoogleLoginMutation.data;
-      logger.info(COMPONENT_NAME, "Google verification mutation successful.", data);
-      if (data?.token) {
-        localStorage.setItem('appToken', data.token); // Store your application's token
-        logger.info(COMPONENT_NAME, "App token stored in localStorage. Redirecting to /dashboard.");
-        router.push('/dashboard');
+      const responseData = verifyGoogleLoginMutation.data;
+      logger.info(COMPONENT_NAME, "Google verification mutation successful.", responseData);
+      
+      const appToken = responseData?.data?.token;
+      const userInfo = responseData?.data; // This is GoogleVerifyResponseData
+
+      if (appToken && userInfo) {
+        // Store token in localStorage for apiClient interceptor and persistence
+        localStorage.setItem('appToken', appToken);
+        // Store userInfo in localStorage for rehydration by ReduxProvider
+        localStorage.setItem('userInfo', JSON.stringify(userInfo)); 
+        
+        // Dispatch success to Redux
+        dispatch(setAuthSuccess({ token: appToken, user: userInfo }));
+        
+        logger.info(COMPONENT_NAME, "App token and userInfo stored. Redirecting to /chat-bot. User data:", userInfo);
+        router.push('/chat-bot');
       } else {
-        const warnMsg = "Google verification successful but no app token received. Please try again.";
-        logger.warn(COMPONENT_NAME, "Google verification successful but no app token received in response.", data);
+        const warnMsg = "Google verification successful but no app token or user info received. Please try again.";
+        logger.warn(COMPONENT_NAME, warnMsg, responseData);
+        dispatch(setAuthError(warnMsg));
         setLoginError(warnMsg);
       }
     }
     if (verifyGoogleLoginMutation.isError) {
-      const errorMsg = "Backend Google verification failed. Please try again later.";
-      logger.error(COMPONENT_NAME, "Backend Google verification mutation failed:", verifyGoogleLoginMutation.error);
-      setLoginError(errorMsg);
+      const error = verifyGoogleLoginMutation.error;
+      // Type assertion for AxiosError if needed, or access error.message
+      const errorMessage = (error as any)?.response?.data?.message || (error as Error)?.message || "Backend Google verification failed. Please try again later.";
+      logger.error(COMPONENT_NAME, "Backend Google verification mutation failed:", errorMessage, error);
+      dispatch(setAuthError(errorMessage));
+      setLoginError(errorMessage);
     }
-  }, [verifyGoogleLoginMutation.isPending, verifyGoogleLoginMutation.isSuccess, verifyGoogleLoginMutation.isError, verifyGoogleLoginMutation.data, router]);
+  }, [verifyGoogleLoginMutation.isSuccess, verifyGoogleLoginMutation.isError, verifyGoogleLoginMutation.data, router, dispatch]);
 
   const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 
-  useEffect(() => { // Moved logger for googleClientId to an effect to avoid multiple logs on re-renders
+  useEffect(() => {
     if (!googleClientId) {
+      const errorMsg = "Google Client ID is not configured. Google Login is disabled.";
       logger.error(COMPONENT_NAME, "Google Client ID (NEXT_PUBLIC_GOOGLE_CLIENT_ID) is not configured.");
+      setLoginError(errorMsg); // Set UI error message
     } else {
       logger.debug(COMPONENT_NAME, "Google Client ID is configured.");
+      // Optionally clear the error if it was previously set due to this specific issue
+      // setLoginError(null); // Or only clear if current loginError is the config error.
     }
   }, [googleClientId]);
 
@@ -126,7 +165,7 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <div className="relative overflow-hidden rounded-md shadow-sm group">
               <Image
-                src="/logo.png" 
+                src="/logo.png"
                 alt="Banking University Logo"
                 width={42}
                 height={42}
@@ -140,13 +179,57 @@ export default function Home() {
               <span className="text-xs text-gray-600">Đại học Ngân hàng TP.HCM</span>
             </div>
           </div>
-          <button 
-            onClick={() => router.push('/login')}
-            className="text-primary-700 hover:text-primary-900 font-medium border-b-2 border-transparent hover:border-primary-700 transition-all duration-300 px-2 py-1 relative overflow-hidden group"
-          >
-            <span className="relative z-10">Đăng nhập</span>
-            <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-primary-700 transition-all duration-300 group-hover:w-full"></span>
-          </button>
+          <div className="flex flex-col gap-2 justify-end items-end">
+            {authIsLoading ? (
+              <div className="flex items-center justify-center h-[40px] w-[300px]"> {/* Adjust size to match GoogleLogin button */}
+                <div className="w-5 h-5 border-t-2 border-b-2 border-primary-700 rounded-full animate-spin"></div>
+                <span className="ml-2 text-sm text-primary-700">Loading...</span>
+              </div>
+            ) : isAuthenticated && userInfo ? (
+              <div className="flex flex-col items-end gap-2">
+                <div className="flex items-center gap-3 p-2 border border-gray-300 rounded-lg bg-white shadow-sm">
+                  <span className="text-sm font-medium text-gray-700">
+                    Welcome, {userInfo.fullName || userInfo.username}!
+                  </span>
+                  <button
+                    onClick={handleLogout}
+                    className="ml-2 px-3 py-1.5 text-xs font-medium text-white bg-red-600 hover:bg-red-700 rounded-md transition-colors"
+                  >
+                    Logout
+                  </button>
+                </div>
+              </div>
+            ) : googleClientId ? (
+              <GoogleLogin
+                onSuccess={handleGoogleLoginSuccess}
+                onError={handleGoogleLoginError}
+                useOneTap={false} 
+                shape="rectangular" 
+                theme="outline" 
+                size="large" 
+                logo_alignment="left" 
+                width="300px" 
+              />
+            ) : (
+              <button
+                disabled
+                className="flex items-center justify-center gap-3 bg-gray-400 text-white border border-gray-500 shadow-md px-6 py-3 rounded-lg h-[40px] w-[300px]" // Match GoogleLogin size
+              >
+                Đăng nhập với Google (Chưa cấu hình)
+              </button>
+            )}
+            {/* Show pending state for verifyGoogleLoginMutation specifically if it's different from general authIsLoading */}
+            {verifyGoogleLoginMutation.isPending && !authIsLoading && (
+              <div className="flex items-center mt-2">
+                <div className="w-5 h-5 border-t-2 border-b-2 border-primary-700 rounded-full animate-spin"></div>
+                <span className="ml-2 text-sm text-primary-700">Đang xác thực...</span>
+              </div>
+            )}
+            {loginError && (
+              <p className="mt-2 text-sm text-red-600">{loginError}</p>
+            )}
+          </div>
+
         </header>
 
         {/* Hero Section - Staggered fade in */}
@@ -163,46 +246,20 @@ export default function Home() {
                 </span> trường Đại học Ngân hàng TP.HCM
               </h1>
             </div>
-            
+
             <p className="text-gray-800 text-lg">
-              Giải đáp mọi thắc mắc về chương trình học, thủ tục hành chính và các hoạt động 
+              Giải đáp mọi thắc mắc về chương trình học, thủ tục hành chính và các hoạt động
               của trường một cách nhanh chóng và chính xác.
             </p>
-            
+
             <div className="flex flex-col sm:flex-row items-start gap-4 mt-6">
               <div className="flex flex-col">
-                {googleClientId ? (
-                  <GoogleLogin
-                    onSuccess={handleGoogleLoginSuccess}
-                    onError={handleGoogleLoginError}
-                    useOneTap={false} // Can be true if you want one-tap sign-in
-                    shape="rectangular" // "rectangular", "pill", "circle", "square"
-                    theme="outline" // "outline", "filled_blue", "filled_black"
-                    size="large" // "small", "medium", "large"
-                    logo_alignment="left" // "left", "center"
-                    width="300px" // Example width, adjust as needed
-                  />
-                ) : (
-                  <button
-                    disabled
-                    className="flex items-center justify-center gap-3 bg-gray-400 text-white border border-gray-500 shadow-md px-6 py-3 rounded-lg"
-                  >
-                    Đăng nhập với Google (Chưa cấu hình)
-                  </button>
-                )}
-                {verifyGoogleLoginMutation.isPending && (
-                  <div className="flex items-center mt-2">
-                    <div className="w-5 h-5 border-t-2 border-b-2 border-primary-700 rounded-full animate-spin"></div>
-                    <span className="ml-2 text-sm text-primary-700">Đang xác thực...</span>
-                  </div>
-                )}
-                {loginError && (
-                  <p className="mt-2 text-sm text-red-600">{loginError}</p>
-                )}
+
+
               </div>
-              
-              <button 
-                onClick={() => { setLoginError(null); router.push('/about');}} 
+
+              <button
+                onClick={() => { setLoginError(null); router.push('/about'); }}
                 className="flex items-center justify-center gap-2 bg-white text-gray-800 border border-gray-300 hover:bg-gray-50 px-6 py-3 rounded-lg transition-all duration-300 transform hover:-translate-y-1 hover:shadow-md relative overflow-hidden group"
               >
                 <span className="absolute inset-0 w-0 h-full bg-primary-50 transition-all duration-300 group-hover:w-full"></span>
@@ -229,13 +286,13 @@ export default function Home() {
             <div className="relative">
               <div className="absolute -left-6 -top-6 w-72 h-72 bg-primary-200 rounded-full opacity-20 blur-3xl animate-blob"></div>
               <div className="absolute -right-6 -bottom-6 w-72 h-72 bg-accent-200 rounded-full opacity-20 blur-3xl animate-blob animation-delay-2000"></div>
-              
+
               <div className="relative bg-white p-6 rounded-2xl shadow-lg border border-secondary-200 transform transition-all duration-300 hover:shadow-xl">
                 <div className="absolute right-6 top-6 flex items-center gap-1 bg-primary-50 text-primary-700 rounded-full px-3 py-1 text-xs font-medium">
                   <span className="h-2 w-2 bg-primary-600 rounded-full animate-pulse"></span>
                   Trợ lý ảo
                 </div>
-                
+
                 <div className="flex items-start gap-4 mb-6">
                   <div className="w-10 h-10 bg-primary-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-md transform transition-transform hover:scale-110 duration-300">
                     <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -262,18 +319,6 @@ export default function Home() {
                     Thủ tục đăng ký học phần?
                   </button>
                 </div>
-
-                <div className="mt-8 pt-6 border-t border-secondary-200 flex justify-center">
-                  <button 
-                    onClick={() => router.push('/login')}
-                    className="text-sm px-5 py-2 bg-primary-50 hover:bg-primary-100 text-primary-700 rounded-full border border-primary-200 transition-all duration-300 flex items-center gap-2 group hover:shadow-md"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Đăng nhập để bắt đầu trò chuyện</span>
-                  </button>
-                </div>
               </div>
             </div>
           </div>
@@ -285,7 +330,7 @@ export default function Home() {
           <p className={`text-center text-gray-600 mb-12 max-w-2xl mx-auto transition-all duration-700 transform delay-150 ${isFeaturesVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
             Trợ lý ảo được phát triển với các công nghệ tiên tiến nhất, mang đến trải nghiệm hỗ trợ tốt nhất cho sinh viên
           </p>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className={`card hover:shadow-lg transition-all duration-500 border-t-4 border-primary-600 transform hover:-translate-y-2 hover:scale-105 delay-300 ${isFeaturesVisible ? 'translate-y-0 opacity-100' : 'translate-y-16 opacity-0'}`}>
               <div className="w-14 h-14 bg-primary-600 rounded-xl flex items-center justify-center mb-5 shadow-md">
@@ -332,7 +377,7 @@ export default function Home() {
               <div className="flex items-center gap-3 mb-4 md:mb-0 group">
                 <div className="overflow-hidden rounded-md">
                   <Image
-                    src="/logo.png" 
+                    src="/logo.png"
                     alt="Banking University Logo"
                     width={32}
                     height={32}

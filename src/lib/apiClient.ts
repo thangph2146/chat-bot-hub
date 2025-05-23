@@ -19,8 +19,7 @@ const apiClientLogger = (componentName: string) => ({
 
 // Create an Axios instance
 const apiClient: AxiosInstance = axios.create({
-  // baseURL will be the current domain, so relative paths from API_ENDPOINTS will work.
-  // e.g., /api/backend/Users/login
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL, // Use the environment variable
   headers: {
     'Content-Type': 'application/json',
   },
@@ -66,8 +65,11 @@ apiClient.interceptors.response.use(
       logger.warn('apiClient', 'Unauthorized (401) error detected. User session might be invalid or expired.');
       // For example, clear token and redirect to login page
       localStorage.removeItem('appToken');
-      // localStorage.removeItem('userInfo'); // Uncomment if you store user info separately
-      logger.info('apiClient', 'App token cleared due to 401 error.');
+      localStorage.removeItem('userInfo'); // Also clear userInfo if stored
+      logger.info('apiClient', 'App token and userInfo cleared from localStorage due to 401 error.');
+      // Ideally, dispatch an action to clear Redux auth state here.
+      // This is hard because apiClient is not a React component.
+      // The UI will reflect unauthenticated state on next check or refresh.
       
       // Check if running in a browser environment before using window.location
       if (typeof window !== 'undefined') {
@@ -182,19 +184,31 @@ export const useGoogleLogin = (): UseMutationResult<{ redirectUrl: string }, Axi
 
 // AUTH_GOOGLE_VERIFY
 // Define expected response structure for Google verify
-interface GoogleVerifyResponse {
-  token: string; // Application-specific token (e.g., JWT)
-  user: any; // User information
-  // Add other properties as returned by your backend
+// Export this type so it can be used in Redux slices
+export interface GoogleVerifyResponseData {
+  userId: number;
+  username: string;
+  email: string;
+  fullName: string;
+  token: string; // This is the application JWT
+  expiresIn: number;
+  // Add other user-related properties from your backend's response if needed
 }
 
-export const useVerifyGoogleLogin = (): UseMutationResult<GoogleVerifyResponse, AxiosError, { code: string } | { token: string }, unknown> => {
+interface GoogleVerifyResponse {
+  success: boolean;
+  statusCode: number;
+  message: string;
+  data: GoogleVerifyResponseData; // The actual user and token data is nested here
+}
+
+export const useVerifyGoogleLogin = (): UseMutationResult<GoogleVerifyResponse, AxiosError, { idToken: string }, unknown> => {
   const qc = useQueryClient();
   const log = apiClientLogger('useVerifyGoogleLogin');
-  return useMutation<GoogleVerifyResponse, AxiosError, { code: string } | { token: string }, unknown>({
-    mutationFn: (params: { code: string } | { token: string }) => {
-      log.info('Verifying Google login with params:', params); // 'params' here is the Google token/code
-      return mutateData('post', API_ENDPOINTS.AUTH_GOOGLE_VERIFY, params);
+  return useMutation<GoogleVerifyResponse, AxiosError, { idToken: string }, unknown>({
+    mutationFn: (params: { idToken: string }) => { // Changed params type to { idToken: string }
+      log.info('Verifying Google login with idToken.'); // Updated log message
+      return mutateData('post', API_ENDPOINTS.AUTH_GOOGLE_VERIFY, params); // params is now { idToken: "string" }
     },
     onSuccess: (data: GoogleVerifyResponse) => {
       log.info('Google login verification successful:', data);
@@ -327,75 +341,3 @@ export const useChatSessionsByUser = (userId: string | null | undefined): UseQue
 };
 
 export { apiClient };
-
-// Example of how to provide the QueryClient to your app (e.g., in _app.tsx or layout.tsx for Next.js)
-// Ensure you create the QueryClient instance with the desired defaultOptions.
-//
-// For Next.js Pages Router (e.g., in `pages/_app.tsx`):
-// import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-// import { ReactQueryDevtools } from '@tanstack/react-query-devtools'; // Optional
-//
-// const queryClient = new QueryClient({
-//   defaultOptions: {
-//     queries: {
-//       staleTime: 1000 * 60 * 5, // 5 minutes
-//       retry: (failureCount, error) => {
-//         const axiosError = error as AxiosError; // Cast to AxiosError
-//         if (axiosError.response?.status === 404) return false;
-//         if (axiosError.response?.status === 401) return false;
-//         return failureCount < 3;
-//       },
-//     },
-//   },
-// });
-//
-// function MyApp({ Component, pageProps }) {
-//   return (
-//     <QueryClientProvider client={queryClient}>
-//       <Component {...pageProps} />
-//       {/* <ReactQueryDevtools initialIsOpen={false} /> */} {/* Optional Devtools */}
-//     </QueryClientProvider>
-//   );
-// }
-// export default MyApp;
-
-// For Next.js 13+ App Router, you'd create a client component provider (e.g., `src/components/QueryProvider.tsx`):
-// 'use client';
-// import { QueryClient, QueryClientProvider as TanstackQueryClientProvider } from '@tanstack/react-query';
-// import { ReactQueryDevtools } from '@tanstack/react-query-devtools'; // Optional
-// import React from 'react';
-//
-// export default function QueryProvider({ children }: { children: React.ReactNode }) {
-//   const [queryClient] = React.useState(() => new QueryClient({
-//     defaultOptions: {
-//       queries: {
-//         staleTime: 1000 * 60 * 5, // 5 minutes
-//         retry: (failureCount, error) => {
-//           const axiosError = error as AxiosError; // Cast to AxiosError
-//           if (axiosError.response?.status === 404) return false;
-//           if (axiosError.response?.status === 401) return false;
-//           return failureCount < 3;
-//         },
-//       },
-//     },
-//   }));
-//   return (
-//     <TanstackQueryClientProvider client={queryClient}>
-//       {children}
-//       {/* <ReactQueryDevtools initialIsOpen={false} /> */} {/* Optional Devtools */}
-//     </TanstackQueryClientProvider>
-//   );
-// }
-//
-// // Then wrap your layout.tsx or relevant parts of your app with <QueryProvider />
-// // e.g. in src/app/layout.tsx
-// // import QueryProvider from '@/components/QueryProvider';
-// // export default function RootLayout({ children }: { children: React.ReactNode }) {
-// //   return (
-// //     <html lang="en">
-// //       <body>
-// //         <QueryProvider>{children}</QueryProvider>
-// //       </body>
-// //     </html>
-// //   );
-// // }

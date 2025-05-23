@@ -14,6 +14,9 @@ const COMPONENT_NAME = "QueryProvider";
 // For client components, useState is a good way to ensure it's created once per component instance.
 export default function QueryProvider({ children }: { children: React.ReactNode }) {
   const [queryClient] = React.useState(() => {
+    // Note: In React StrictMode (common in development), this initializer function
+    // may be called twice to help detect accidental side effects.
+    // This is expected and generally not an issue for QueryClient instantiation.
     logger.info(COMPONENT_NAME, "Initializing QueryClient with default options.");
     return new QueryClient({
       defaultOptions: {
